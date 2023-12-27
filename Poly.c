@@ -30,7 +30,7 @@ void gen_poly_from_number(int plain,Poly *p){
 
 void mult_scalar(Poly *p, int scalar){
     for (int i = 0; i < TK_N; ++i) {
-        p->coeffs[i] = (p->coeffs[i] * scalar) % TK_Q;
+        p->coeffs[i] = (((p->coeffs[i] * scalar) % TK_Q) + TK_Q)%TK_Q;
     }
 }
 void p_binomial_distribution(Poly *p) {

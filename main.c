@@ -33,7 +33,7 @@ int main() {
     Cipher c[blocks];
     int plain = 12;
     printf(" plain text is %d\n",plain);
-    toy_enc(a,t,plain,u,v,blocks,c);
+    toy_enc(a,t,plain,u,&v,blocks,c);
     int plain_decyphered =  toy_dec(s, u ,v);
     printf(" Decrypted text is %d\n",plain_decyphered);
     for (int i = 0; i < blocks; ++i) {

@@ -10,6 +10,12 @@ static void toy_polmul_naive(
         const int *a,
         const int *b,
         int add_to_dst){
+    dst[0]= (((dst[0]&-add_to_dst)+a[0]*b[0]+ (a[3])*b[1]+ (a[2])*b[2]+ (a[1])*b[3])%TK_Q+TK_Q)%TK_Q;
+    dst[1]= (((dst[1]&-add_to_dst)+a[1]*b[0]+ a[0]*b[1]+ (a[3])*b[2]+ (a[2])*b[3])%TK_Q+TK_Q)%TK_Q;
+    dst[2]= (((dst[2]&-add_to_dst)+a[2]*b[0]+ a[1]*b[1]+ a[0]*b[2]+ (a[3])*b[3])%TK_Q+TK_Q)%TK_Q;
+    dst[3]= (((dst[3]&-add_to_dst)+a[3]*b[0]+ a[2]*b[1]+ a[1]*b[2]+ a[0]*b[3])%TK_Q+TK_Q)%TK_Q;
+
+    /*
     if (!add_to_dst) {
         dst[0] = (((a[0] * b[0] - a[3] * b[1] - a[2] * b[2] - a[1] * b[3]) % TK_Q) + TK_Q)%TK_Q;
         dst[1] = (((a[1] * b[0] + a[0] * b[1] - a[3] * b[2] - a[2] * b[3]) % TK_Q)+TK_Q)%TK_Q;
@@ -21,7 +27,7 @@ static void toy_polmul_naive(
         dst[1] += (((a[1] * b[0] + a[0] * b[1] - a[3] * b[2] - a[2] * b[3]) % TK_Q)+TK_Q)%TK_Q;
         dst[2] += (((a[2] * b[0] + a[1] * b[1] + a[0] * b[2] - a[3] * b[3]) % TK_Q)+TK_Q)%TK_Q;
         dst[3] += (((a[3] * b[0] + a[2] * b[1] + a[1] * b[2] + a[0] * b[3]) % TK_Q)+TK_Q)%TK_Q;
-    }
+    }*/
 }
 void transpose_matrix(Poly A[TK_K][TK_K]){
     for (int i = 0; i < TK_K; ++i) {
@@ -79,7 +85,7 @@ void add_vector_poly(Poly dst[TK_K], const Poly a[TK_K], const Poly b[TK_K]){
     }
 }
 
-void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_K], Poly v,int blocks,Cipher c[blocks]){
+void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_K], Poly *v,int blocks,Cipher c[blocks]){
 //    Fill K-vectors r & e1, and the scalar (one-polynomial) e2 with small
 //    random numbers mod q
 //    u = A_transpose(K,K) . r(K,1) + e1(K,1)
@@ -108,9 +114,9 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
     print2d_matrix(u);
     //    v = t(1,K) dot r(K,1) + e2 + msg_bits * q/2
     for (int i = 0; i < TK_K; ++i) {
-        toy_polmul_naive(v.coeffs,t[i].coeffs,r[i].coeffs,1);
+        toy_polmul_naive(v->coeffs,t[i].coeffs,r[i].coeffs,1);
     }
-    add_poly(&v,&v,&e2);
+    add_poly(v,v,&e2);
     // convert input to polynomial
     Poly plain_poly;
     gen_poly_from_number(plain,&plain_poly);
@@ -121,9 +127,9 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
     printf("\nplain poly vector after scaling by q/2\n");
     print_poly(&plain_poly);
     // add to v
-    add_poly(&v,&v,&plain_poly);
+    add_poly(v,v,&plain_poly);
     printf("\nv vector\n");
-    print_poly(&v);
+    print_poly(v);
 
 //    int blocks = (int)(256/TK_N)+1;
 //    Cipher c[blocks];
@@ -166,29 +172,38 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
     return plain
     */
 int toy_dec(Poly s[TK_K],Poly u[TK_K] ,Poly v){
-    int plain = 0;
     Poly p;
     initialize_poly(&p);
+    printf("\n s matrix\n");
+    print2d_matrix(s);
+    printf("\n u matrix\n");
+    print2d_matrix(u);
         //    p = s . uT
         for (int i = 0; i<TK_K;i++){
             toy_polmul_naive(p.coeffs,s[i].coeffs,u[i].coeffs,1);
         }
+        printf("\n v vector\n");
+        print_poly(&v);
+        printf("\n s . uT vector\n");
+        print_poly(&p);
         // p = - (s . u)
         mult_scalar(&p,-1);
-        // p = v- (s . u)
-        printf("current plain before adding unrelated vector is %d\n",plain);
-        add_vector_poly(&p,&p,&v);
-        printf("current plain after adding unrelated vector is %d\n",plain);
-
-        printf("\np vector\n");
+        printf("\n - s . uT vector\n");
         print_poly(&p);
+        // p = v- (s . u)
+      //  printf("current plain before adding unrelated vector is %d\n",plain);
+        add_vector_poly(&p,&p,&v);
+      //  printf("current plain after adding unrelated vector is %d\n",plain);
+        printf("\n p =  v - s . uT vector\n");
+        print_poly(&p);
+        int plain = 0;
         for (int i = 0; i < TK_N; i++) {
             int val = p.coeffs[i];
            // printf("val %d \n",val);
-            if(val > TK_Q/2){
+            if(val > TK_Q/4 && val < TK_Q *3/4){
                 plain += pow(2,i);
             }
-            printf("current plain is %d\n at i = %d",plain,i);
+            printf("current plain is %d at i = %d\n",plain,i);
             //int bit = abs(val) > TK_Q /4;
             //printf("%d ",bit);
             //plain |= bit<<i;
