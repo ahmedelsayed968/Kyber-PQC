@@ -104,17 +104,34 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
         }
     }
     add_vector_poly(u,u,e1);
+    printf("u matrix\n");
+    print2d_matrix(u);
     //    v = t(1,K) dot r(K,1) + e2 + msg_bits * q/2
     for (int i = 0; i < TK_K; ++i) {
         toy_polmul_naive(v.coeffs,t[i].coeffs,r[i].coeffs,1);
     }
     add_poly(&v,&v,&e2);
+    // convert input to polynomial
+    Poly plain_poly;
+    gen_poly_from_number(plain,&plain_poly);
+    printf("plain poly vector\n");
+    print_poly(&plain_poly);
+    // scale by q/2
+    mult_scalar(&plain_poly,TK_Q/2);
+    printf("\nplain poly vector after scaling by q/2\n");
+    print_poly(&plain_poly);
+    // add to v
+    add_poly(&v,&v,&plain_poly);
+    printf("\nv vector\n");
+    print_poly(&v);
+
 //    int blocks = (int)(256/TK_N)+1;
 //    Cipher c[blocks];
 //    print_poly(&v);
 //    for (int i = 0; i < TK_K; ++i) {
 //        print_poly(&u[i]);
 //    }
+/*
     int j = 0;
     for (int i = 0; i < blocks; ++i) {
         Poly msg_bits;
@@ -134,11 +151,49 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
         }
         c[i].v = temp;
 
-    }
+    }*/
 
 }
-int toy_dec(const short *s, const short *u, const short *v){
-    return 0;
+    /*
+    p = v – s dot u
+    plain=0
+    for i=0 to n:
+        val = p[i]
+        if(val>q/2)
+        val -= q
+        bit = abs(val)>q/4
+        plain |= bit<<i
+    return plain
+    */
+int toy_dec(Poly s[TK_K],Poly u[TK_K] ,Poly v){
+    int plain = 0;
+    Poly p;
+    initialize_poly(&p);
+        //    p = s . uT
+        for (int i = 0; i<TK_K;i++){
+            toy_polmul_naive(p.coeffs,s[i].coeffs,u[i].coeffs,1);
+        }
+        // p = - (s . u)
+        mult_scalar(&p,-1);
+        // p = v- (s . u)
+        printf("current plain before adding unrelated vector is %d\n",plain);
+        add_vector_poly(&p,&p,&v);
+        printf("current plain after adding unrelated vector is %d\n",plain);
+
+        printf("\np vector\n");
+        print_poly(&p);
+        for (int i = 0; i < TK_N; i++) {
+            int val = p.coeffs[i];
+           // printf("val %d \n",val);
+            if(val > TK_Q/2){
+                plain += pow(2,i);
+            }
+            printf("current plain is %d\n at i = %d",plain,i);
+            //int bit = abs(val) > TK_Q /4;
+            //printf("%d ",bit);
+            //plain |= bit<<i;
+        }
+    return plain;
 }
 void normal_distribution(Poly A[TK_K][TK_K]){
     srand(time(NULL));

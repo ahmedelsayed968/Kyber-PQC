@@ -12,6 +12,8 @@ typedef struct {
 } Poly;
 void initialize_poly(Poly *p);
 void p_normal_distribution(Poly *p);
+void gen_poly_from_number(int plain,Poly *p);
+void mult_scalar(Poly *p, int scalar);
 void p_binomial_distribution(Poly *p);
 void add_poly(Poly *dst, const Poly *a, const Poly *b);
 void swap_poly(Poly *a, Poly *b);

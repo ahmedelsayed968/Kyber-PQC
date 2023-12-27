@@ -28,11 +28,16 @@ int main() {
 //    print_poly(&a);
 //    print_poly(&b);
     Poly u[TK_K], v;
+    initialize_poly(&v);
     int blocks = (int)(256/TK_N);
     Cipher c[blocks];
-    toy_enc(a,t,1,u,v,blocks,c);
+    int plain = 12;
+    printf(" plain text is %d\n",plain);
+    toy_enc(a,t,plain,u,v,blocks,c);
+    int plain_decyphered =  toy_dec(s, u ,v);
+    printf(" Decrypted text is %d\n",plain_decyphered);
     for (int i = 0; i < blocks; ++i) {
-        print_cipher(&c[i],i);
+       // print_cipher(&c[i],i);
     }
     return 0;
 }
