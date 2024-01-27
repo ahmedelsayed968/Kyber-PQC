@@ -37,4 +37,5 @@ void print_a_matrix(Poly A[TK_K][TK_K]);
 void print2d_matrix(Poly a[TK_K]);
 void transpose_matrix(Poly A[TK_K][TK_K]);
 void copy_matrix(Poly dst[TK_K][TK_K],Poly src[TK_K][TK_K]);
+void dot_product(Poly * dest,Poly A[TK_K],Poly B[TK_K]);
 #endif //KYBER_TOY_H

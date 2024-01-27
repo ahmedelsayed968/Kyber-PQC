@@ -29,6 +29,12 @@ static void toy_polmul_naive(
         dst[3] += (((a[3] * b[0] + a[2] * b[1] + a[1] * b[2] + a[0] * b[3]) % TK_Q)+TK_Q)%TK_Q;
     }*/
 }
+
+void dot_product(Poly * dest,Poly A[TK_K],Poly B[TK_K]){
+    for (int i = 0; i < TK_K; ++i) {
+        toy_polmul_naive(dest->coeffs,A[i].coeffs,B[i].coeffs,1);
+    }
+}
 void transpose_matrix(Poly A[TK_K][TK_K]){
     for (int i = 0; i < TK_K; ++i) {
         for (int j = i+1; j < TK_K; ++j) {
@@ -103,6 +109,8 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
     Poly A_transpose[TK_K][TK_K];
     copy_matrix(A_transpose,A);
     transpose_matrix(A_transpose);
+    printf("A transpose matrix\n");
+    print_a_matrix(A_transpose);
     // u = A_transpose(K,K) . r(K,1) + e1(K,1)
     for (int i = 0; i < TK_K; ++i) {
         for (int j = 0; j < TK_K; ++j) {
@@ -113,10 +121,13 @@ void toy_enc(const Poly A[TK_K][TK_K], const Poly t[TK_K], int plain, Poly u[TK_
     printf("u matrix\n");
     print2d_matrix(u);
     //    v = t(1,K) dot r(K,1) + e2 + msg_bits * q/2
-    for (int i = 0; i < TK_K; ++i) {
-        toy_polmul_naive(v->coeffs,t[i].coeffs,r[i].coeffs,1);
-    }
+//    for (int i = 0; i < TK_K; ++i) {
+//        toy_polmul_naive(v->coeffs,t[i].coeffs,r[i].coeffs,1);
+//    }
+    dot_product(v,t,r);
     add_poly(v,v,&e2);
+    printf("\nv vector\n");
+    print_poly(v);
     // convert input to polynomial
     Poly plain_poly;
     gen_poly_from_number(plain,&plain_poly);
@@ -179,9 +190,10 @@ int toy_dec(Poly s[TK_K],Poly u[TK_K] ,Poly v){
     printf("\n u matrix\n");
     print2d_matrix(u);
         //    p = s . uT
-        for (int i = 0; i<TK_K;i++){
-            toy_polmul_naive(p.coeffs,s[i].coeffs,u[i].coeffs,1);
-        }
+//        for (int i = 0; i<TK_K;i++){
+//            toy_polmul_naive(p.coeffs,s[i].coeffs,u[i].coeffs,1);
+//        }
+        dot_product(&p,s,u);
         printf("\n v vector\n");
         print_poly(&v);
         printf("\n s . uT vector\n");
@@ -200,8 +212,9 @@ int toy_dec(Poly s[TK_K],Poly u[TK_K] ,Poly v){
         for (int i = 0; i < TK_N; i++) {
             int val = p.coeffs[i];
            // printf("val %d \n",val);
-            if(val > TK_Q/4 && val < TK_Q *3/4){
-                plain += pow(2,i);
+           // < val < 3/4 TQ
+            if(4*val > TK_Q && 4*val < TK_Q *3){
+                plain += (int)pow(2,i);
             }
             printf("current plain is %d at i = %d\n",plain,i);
             //int bit = abs(val) > TK_Q /4;
@@ -210,7 +223,7 @@ int toy_dec(Poly s[TK_K],Poly u[TK_K] ,Poly v){
         }
     return plain;
 }
-void normal_distribution(Poly A[TK_K][TK_K]){
+void normal_distribution(Poly A[TK_K][TK_K]){ // K*N
     srand(time(NULL));
     for (int i = 0; i < TK_K; ++i) {
         for (int j = 0; j < TK_K; ++j) {

@@ -35,10 +35,15 @@ void mult_scalar(Poly *p, int scalar){
 }
 void p_binomial_distribution(Poly *p) {
     for (int i = 0; i < TK_N; ++i) {
-        int val = rand() & 3;
-        p->coeffs[i] = (val & 1) - (val >> 1 & 1);
+        int val = rand(); // 0,1,2,3
+        val = ((val & 1) - (val >> 1 & 1)); // 0 - 1
+        printf("%d ",val);
+        p->coeffs[i] = val%TK_Q;
     }
+    printf("\n");
 }
+
+
 void add_poly(Poly *dst, const Poly *a, const Poly *b) {
     for (int i = 0; i < TK_N; ++i) {
         dst->coeffs[i] = (((a->coeffs[i] + b->coeffs[i]) % TK_Q) + TK_Q)%TK_Q;
