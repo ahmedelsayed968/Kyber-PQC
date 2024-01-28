@@ -2,6 +2,7 @@
 // Created by Ahmed Elsayed on 12/26/2023.
 //
 #include "Poly.h"
+#include "math.h"
 void initialize_poly(Poly *p) {
     for (int i = 0; i < TK_N; ++i) {
         p->coeffs[i] = 0;
@@ -12,15 +13,40 @@ void p_normal_distribution(Poly *p) {
         p->coeffs[i] = rand() % TK_Q;
     }
 }
-void p_binomial_distribution(Poly *p) {
-    for (int i = 0; i < TK_N; ++i) {
-        int val = rand() & 3;
-        p->coeffs[i] = (val & 1) - (val >> 1 & 1);
+
+void gen_poly_from_number(int plain,Poly *p){
+    if(plain > pow(2,TK_N)-1){
+        printf("Plaint text size exceeds (2^n) -1  can't encrypt");
+    }
+    else{
+        initialize_poly(p);
+        int i=0;
+        while (plain > 0) {
+            p->coeffs[i++] =  plain % 2;
+            plain /= 2;
+        }
     }
 }
+
+void mult_scalar(Poly *p, int scalar){
+    for (int i = 0; i < TK_N; ++i) {
+        p->coeffs[i] = (((p->coeffs[i] * scalar) % TK_Q) + TK_Q)%TK_Q;
+    }
+}
+void p_binomial_distribution(Poly *p) {
+    for (int i = 0; i < TK_N; ++i) {
+        int val = rand(); // 0,1,2,3
+        val = ((val & 1) - (val >> 1 & 1)); // 0 - 1
+        printf("%d ",val);
+        p->coeffs[i] = val%TK_Q;
+    }
+    printf("\n");
+}
+
+
 void add_poly(Poly *dst, const Poly *a, const Poly *b) {
     for (int i = 0; i < TK_N; ++i) {
-        dst->coeffs[i] = ((a->coeffs[i] + b->coeffs[i]) % TK_Q + TK_Q)%TK_Q;
+        dst->coeffs[i] = (((a->coeffs[i] + b->coeffs[i]) % TK_Q) + TK_Q)%TK_Q;
     }
 }
 void swap_poly(Poly *a, Poly *b) {
